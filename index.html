@@ -523,7 +523,7 @@
             }).catch(e => console.error(e));
         }
     <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjHAVpX96lf-bIz_07DDRADk4IJSYK3Q8H8GTUmLuAMfVgXra4eyse3gJgrb41ZK7q/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVzISzFriJimqTV9VJjVWhVrLD3Muzwil4M_LA5UFfvF9CfocGv3RkcgILvm8jDMhE/exec';
 
     let visitorId = localStorage.getItem('ebike_chat_id');
     if (!visitorId) {
@@ -534,62 +534,70 @@
     const chatBody = document.getElementById('chatBody');
     const userInput = document.getElementById('userInput');
     const typingBubble = document.getElementById('typingBubble');
-    userInput.focus();
+    if (userInput) userInput.focus();
 
-    userInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
+    if (userInput) {
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
 
-    // Отправка через JSONP (GET-запрос с колбэком)
     function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
         addMessage('user', text);
         userInput.value = '';
 
-        const callbackName = 'cb_' + Date.now();
-        window[callbackName] = function(data) {
+        // Используем глобально уникальное имя колбэка
+        const cbName = 'sendCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+        window[cbName] = function(data) {
             console.log('Отправлено:', data);
-            delete window[callbackName];
+            delete window[cbName];
         };
 
-        const script = document.createElement('script');
-        script.src = SCRIPT_URL + '?action=send&user_id=' + visitorId +
-                     '&message=' + encodeURIComponent(text) +
-                     '&callback=' + callbackName;
-        document.body.appendChild(script);
-        script.onload = function() { document.body.removeChild(script); };
+        const s = document.createElement('script');
+        s.src = SCRIPT_URL +
+                '?action=send' +
+                '&user_id=' + encodeURIComponent(visitorId) +
+                '&message=' + encodeURIComponent(text) +
+                '&callback=' + cbName;
+        s.onerror = function() { console.error('Ошибка загрузки скрипта JSONP'); };
+        document.body.appendChild(s);
+        s.onload = function() { document.body.removeChild(s); };
 
         scrollDown();
     }
 
     function addMessage(who, text) {
         const div = document.createElement('div');
-        div.className = `msg ${who}`;
+        div.className = 'msg ' + who;
         const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        div.innerHTML = `${text}<span class="time">${time}</span>`;
-        chatBody.appendChild(div);
+        div.innerHTML = text + '<span class="time">' + time + '</span>';
+        if (chatBody) chatBody.appendChild(div);
         scrollDown();
     }
 
     function scrollDown() {
-        chatBody.scrollTop = chatBody.scrollHeight;
+        if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-    // Опрос ответов (каждые 3 секунды, тоже через JSONP)
     function pollReplies() {
-        const callbackName = 'poll_' + Date.now();
-        window[callbackName] = function(data) {
-            if (data.messages && data.messages.length > 0) {
-                data.messages.forEach(m => addMessage('manager', m.text));
+        const cbName = 'pollCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+        window[cbName] = function(data) {
+            if (data && data.messages && data.messages.length > 0) {
+                data.messages.forEach(function(m) { addMessage('manager', m.text); });
             }
-            delete window[callbackName];
+            delete window[cbName];
         };
 
-        const script = document.createElement('script');
-        script.src = SCRIPT_URL + '?action=poll&user_id=' + visitorId + '&callback=' + callbackName;
-        document.body.appendChild(script);
-        script.onload = function() { document.body.removeChild(script); };
+        const s = document.createElement('script');
+        s.src = SCRIPT_URL +
+                '?action=poll' +
+                '&user_id=' + encodeURIComponent(visitorId) +
+                '&callback=' + cbName;
+        s.onerror = function() { console.error('Ошибка опроса JSONP'); };
+        document.body.appendChild(s);
+        s.onload = function() { document.body.removeChild(s); };
     }
 
     setInterval(pollReplies, 3000);
