@@ -523,7 +523,7 @@
             }).catch(e => console.error(e));
         }
     <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNlXw17Teo-pq79SZaknC1vxRfeTYmxIAkIJKy-1O7lYbYtI-PG2HrMt4GzjId2bJS/exec'; // ← URL из Шага 1
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoguPsNQRG4ZYCZLOFUUnxLc5iWyINkR94RkQb98Cb9lmibMXz2ndkqCCKjHqghnQj/exec';
 
     let visitorId = localStorage.getItem('ebike_chat_id');
     if (!visitorId) {
@@ -540,16 +540,26 @@
         if (e.key === 'Enter') sendMessage();
     });
 
+    // Отправка через JSONP (GET-запрос с колбэком)
     function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
         addMessage('user', text);
         userInput.value = '';
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send', user_id: visitorId, message: text })
-        }).catch(e => console.error(e));
+
+        const callbackName = 'cb_' + Date.now();
+        window[callbackName] = function(data) {
+            console.log('Отправлено:', data);
+            delete window[callbackName];
+        };
+
+        const script = document.createElement('script');
+        script.src = SCRIPT_URL + '?action=send&user_id=' + visitorId +
+                     '&message=' + encodeURIComponent(text) +
+                     '&callback=' + callbackName;
+        document.body.appendChild(script);
+        script.onload = function() { document.body.removeChild(script); };
+
         scrollDown();
     }
 
@@ -566,19 +576,20 @@
         chatBody.scrollTop = chatBody.scrollHeight;
     }
 
+    // Опрос ответов (каждые 3 секунды, тоже через JSONP)
     function pollReplies() {
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'poll', user_id: visitorId })
-        })
-        .then(r => r.json())
-        .then(data => {
+        const callbackName = 'poll_' + Date.now();
+        window[callbackName] = function(data) {
             if (data.messages && data.messages.length > 0) {
                 data.messages.forEach(m => addMessage('manager', m.text));
             }
-        })
-        .catch(e => console.error('Poll error:', e));
+            delete window[callbackName];
+        };
+
+        const script = document.createElement('script');
+        script.src = SCRIPT_URL + '?action=poll&user_id=' + visitorId + '&callback=' + callbackName;
+        document.body.appendChild(script);
+        script.onload = function() { document.body.removeChild(script); };
     }
 
     setInterval(pollReplies, 3000);
