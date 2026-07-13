@@ -92,7 +92,9 @@
 
 <script>
 (function() {
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoIFaYktxqPyquUQ1dIgUV2nHetFE2v8m4EVH-IPKWhdp8tz9BrH2jlLUDA8qWFzwG/exec';
+    // ЗАМЕНИТЕ НА СВОИ ДАННЫЕ:
+    const VK_TOKEN = 'vk1.a.hHzVmJEjN2Kye_AduICuyP80liV9GWDzXTFOK5MQ0Y4KhQBtheN9vrtfKYI-Wq5HV8eIKjDUGzJmnfWXlT2Lz49XxpxCscZpiGUl9auijocUAdMuOLIv9NBPk3RBBsUWRFp4L1u86hEjZVoviCoUOpPrtU5Nkw7s_t5don2rW_YUnOycufbD3xQkXhi0Tt1TGzsmltrDINoF556pSzsW-g';
+    const YOUR_VK_ID = 40815578;
 
     let visitorId = localStorage.getItem('ebike_chat_id');
     if (!visitorId) {
@@ -111,16 +113,21 @@
         addMessage('user', text);
         userInput.value = '';
 
-        const cbName = 'cb_' + Date.now();
-        window[cbName] = function(data) {
-            console.log('Sent OK:', data);
-            delete window[cbName];
-        };
+        const vkText = '📩 Заявка с сайта (' + visitorId + ')\n' + text;
+        const url = 'https://api.vk.com/method/messages.send'
+            + '?user_id=' + YOUR_VK_ID
+            + '&message=' + encodeURIComponent(vkText)
+            + '&random_id=' + Math.floor(Math.random() * 100000000)
+            + '&access_token=' + VK_TOKEN
+            + '&v=5.199';
 
-        const s = document.createElement('script');
-        s.src = SCRIPT_URL + '?action=send&user_id=' + encodeURIComponent(visitorId) + '&message=' + encodeURIComponent(text) + '&callback=' + cbName;
-        document.body.appendChild(s);
-        s.onload = function() { document.body.removeChild(s); };
+        // Отправка через скрытый iframe (обходит CORS)
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        setTimeout(function() { document.body.removeChild(iframe); }, 5000);
+
         scrollDown();
     }
 
