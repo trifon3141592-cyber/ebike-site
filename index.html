@@ -92,7 +92,6 @@
 
 <script>
 (function() {
-    // НАСТРОЙКИ
     const VK_TOKEN = 'vk1.a.hHzVmJEjN2Kye_AduICuyP80liV9GWDzXTFOK5MQ0Y4KhQBtheN9vrtfKYI-Wq5HV8eIKjDUGzJmnfWXlT2Lz49XxpxCscZpiGUl9auijocUAdMuOLIv9NBPk3RBBsUWRFp4L1u86hEjZVoviCoUOpPrtU5Nkw7s_t5don2rW_YUnOycufbD3xQkXhi0Tt1TGzsmltrDINoF556pSzsW-g';
     const YOUR_VK_ID = 40815578;
 
@@ -102,23 +101,25 @@
         localStorage.setItem('ebike_chat_id', visitorId);
     }
 
-    const chatBody = document.getElementById('chatBody');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
+    var chatBody = document.getElementById('chatBody');
+    var userInput = document.getElementById('userInput');
+    var sendBtn = document.getElementById('sendBtn');
+
+    if (!chatBody || !userInput || !sendBtn) {
+        console.error('Элементы чата не найдены');
+        return;
+    }
+
     userInput.focus();
 
-    let shownReplies = {};
-    let lastMsgId = 0;
-
-    // Отправка сообщения
     function sendMessage() {
-        const text = userInput.value.trim();
+        var text = userInput.value.trim();
         if (!text) return;
         addMessage('user', text);
         userInput.value = '';
 
-        const vkText = '📩 ' + visitorId + '\n' + text;
-        const url = 'https://api.vk.com/method/messages.send'
+        var vkText = '📩 ' + visitorId + '\n' + text;
+        var url = 'https://api.vk.com/method/messages.send'
             + '?user_id=' + YOUR_VK_ID
             + '&message=' + encodeURIComponent(vkText)
             + '&random_id=' + Math.floor(Math.random() * 100000000)
@@ -134,53 +135,10 @@
         if (e.key === 'Enter') sendMessage();
     });
 
-    // Проверка ответов через Image (работает!)
-    function checkReplies() {
-        const url = 'https://api.vk.com/method/messages.getHistory'
-            + '?user_id=' + YOUR_VK_ID
-            + '&count=5'
-            + '&access_token=' + VK_TOKEN
-            + '&v=5.199';
-
-        // Используем Image для обхода CORS
-        const img = new Image();
-        img.onload = function() {
-            // Image загрузился, но мы не можем прочитать ответ.
-            // Поэтому используем fetch с no-cors и читаем через iframe
-        };
-        img.src = url;
-
-        // Запасной метод через fetch с прокси
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.response && data.response.items) {
-                    const items = data.response.items;
-                    for (let i = 0; i < items.length; i++) {
-                        const msg = items[i];
-                        if (msg.out === 0 && msg.id > lastMsgId) {
-                            lastMsgId = msg.id;
-                            const txt = msg.text;
-                            if (txt.indexOf(visitorId) !== -1 && !shownReplies[msg.id]) {
-                                shownReplies[msg.id] = true;
-                                const reply = txt.split('\n').slice(1).join('\n').trim();
-                                if (reply) {
-                                    addMessage('manager', reply);
-                                }
-                            }
-                        }
-                    }
-                }
-            })
-            .catch(function() {});
-    }
-
-    setInterval(checkReplies, 5000);
-
     function addMessage(who, text) {
-        const div = document.createElement('div');
+        var div = document.createElement('div');
         div.className = 'msg ' + who;
-        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        var time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         div.innerHTML = text + '<span class="time">' + time + '</span>';
         chatBody.appendChild(div);
         scrollDown();
