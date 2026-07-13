@@ -40,12 +40,100 @@
     });
 
     // Проверка ответов из ВК (каждые 5 секунд)
-    function checkReplies() {
-        const url = 'https://api.vk.com/method/messages.getHistory'
+    <script>
+(function() {
+    const VK_TOKEN = 'vk1.a.hHzVmJEjN2Kye_AduICuyP80liV9GWDzXTFOK5MQ0Y4KhQBtheN9vrtfKYI-Wq5HV8eIKjDUGzJmnfWXlT2Lz49XxpxCscZpiGUl9auijocUAdMuOLIv9NBPk3RBBsUWRFp4L1u86hEjZVoviCoUOpPrtU5Nkw7s_t5don2rW_YUnOycufbD3xQkXhi0Tt1TGzsmltrDINoF556pSzsW-g';
+    const YOUR_VK_ID = 40815578;
+    let lastCheck = Date.now();
+
+    let visitorId = localStorage.getItem('ebike_chat_id');
+    if (!visitorId) {
+        visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        localStorage.setItem('ebike_chat_id', visitorId);
+    }
+
+    const chatBody = document.getElementById('chatBody');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    userInput.focus();
+
+    function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+        addMessage('user', text);
+        userInput.value = '';
+
+        const vkText = '📩 ' + visitorId + '\n' + text;
+        const url = 'https://api.vk.com/method/messages.send'
             + '?user_id=' + YOUR_VK_ID
-            + '&count=5'
+            + '&message=' + encodeURIComponent(vkText)
+            + '&random_id=' + Math.floor(Math.random() * 100000000)
             + '&access_token=' + VK_TOKEN
             + '&v=5.199';
+
+        new Image().src = url;
+        scrollDown();
+        lastCheck = Date.now();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Проверка ответов через iframe (сработает, т.к. не JSONP)
+    function checkReplies() {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = 'https://api.vk.com/method/messages.getHistory'
+            + '?user_id=' + YOUR_VK_ID
+            + '&count=3'
+            + '&access_token=' + VK_TOKEN
+            + '&v=5.199';
+
+        iframe.onload = function() {
+            try {
+                const text = iframe.contentDocument.body.innerText;
+                const data = JSON.parse(text);
+                if (data.response && data.response.items) {
+                    const items = data.response.items;
+                    for (let i = 0; i < items.length; i++) {
+                        const msg = items[i];
+                        if (msg.out === 0 && msg.date * 1000 > lastCheck - 10000) {
+                            const txt = msg.text;
+                            if (txt.indexOf(visitorId) !== -1) {
+                                const reply = txt.split('\n').slice(1).join('\n');
+                                if (reply.trim()) {
+                                    addMessage('manager', reply.trim());
+                                    lastCheck = Date.now();
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch(e) {}
+            document.body.removeChild(iframe);
+        };
+
+        document.body.appendChild(iframe);
+    }
+
+    setInterval(checkReplies, 5000);
+
+    function addMessage(who, text) {
+        const div = document.createElement('div');
+        div.className = 'msg ' + who;
+        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = text + '<span class="time">' + time + '</span>';
+        chatBody.appendChild(div);
+        scrollDown();
+    }
+
+    function scrollDown() {
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+})();
+</script>;
 
         const script = document.createElement('script');
         const cbName = 'vkCb_' + Date.now();
