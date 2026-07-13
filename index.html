@@ -94,7 +94,9 @@
 
 <script>
 (function() {
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVzISzFriJimqTV9VJjVWhVrLD3Muzwil4M_LA5UFfvF9CfocGv3RkcgILvm8jDMhE/exec';
+    // ⚠️ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ:
+    const VK_TOKEN = 'vk1.a.5e9592535e9592535e959253e85dd7d95755e955e95925334c19e5a04ce0a808d5ac4a9';
+    const YOUR_VK_ID = 40815578;
 
     let visitorId = localStorage.getItem('ebike_chat_id');
     if (!visitorId) {
@@ -105,6 +107,7 @@
     const chatBody = document.getElementById('chatBody');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
+
     if (!chatBody || !userInput || !sendBtn) return;
     userInput.focus();
 
@@ -115,17 +118,27 @@
         addMessage('user', text);
         userInput.value = '';
 
-        const cbName = 'scb_' + Date.now();
-        window[cbName] = function(data) {
-            console.log('Sent OK:', data);
-            delete window[cbName];
-        };
+        const vkText = '📩 *Заявка с сайта (' + visitorId + ')*\n' + text;
 
-        const s = document.createElement('script');
-        s.src = SCRIPT_URL + '?action=send&user_id=' + encodeURIComponent(visitorId) + '&message=' + encodeURIComponent(text) + '&callback=' + cbName;
-        s.onerror = function() { console.error('Send failed'); delete window[cbName]; };
-        document.body.appendChild(s);
-        s.onload = function() { document.body.removeChild(s); };
+        fetch('https://api.vk.com/method/messages.send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'user_id=' + YOUR_VK_ID +
+                  '&message=' + encodeURIComponent(vkText) +
+                  '&random_id=' + Math.floor(Math.random() * 100000000) +
+                  '&access_token=' + VK_TOKEN +
+                  '&v=5.199'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            console.log('VK ответ:', data);
+            if (data.error) {
+                addMessage('manager', '⚠️ Ошибка отправки. Позвоните: +7 (916) 123-45-67');
+            }
+        })
+        .catch(function(err) {
+            console.error('Ошибка:', err);
+        });
 
         scrollDown();
     }
@@ -147,26 +160,6 @@
     function scrollDown() {
         chatBody.scrollTop = chatBody.scrollHeight;
     }
-
-    function pollReplies() {
-        const cbName = 'pcb_' + Date.now();
-        window[cbName] = function(data) {
-            if (data && data.messages && data.messages.length) {
-                for (let i = 0; i < data.messages.length; i++) {
-                    addMessage('manager', data.messages[i].text);
-                }
-            }
-            delete window[cbName];
-        };
-
-        const s = document.createElement('script');
-        s.src = SCRIPT_URL + '?action=poll&user_id=' + encodeURIComponent(visitorId) + '&callback=' + cbName;
-        s.onerror = function() { delete window[cbName]; };
-        document.body.appendChild(s);
-        s.onload = function() { document.body.removeChild(s); };
-    }
-
-    setInterval(pollReplies, 3000);
 })();
 </script>
 
