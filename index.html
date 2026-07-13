@@ -11,8 +11,7 @@
         .hero { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 60%, #0d2e1a 100%); color: #fff; text-align: center; padding: 40px 20px; }
         .hero .logo { font-size: 38px; font-weight: 900; margin-bottom: 8px; }
         .hero .logo .ebike { color: #fff; } .hero .logo .street { color: #00e676; } .hero .logo .fix { color: #fff; background: #00c853; padding: 2px 10px; border-radius: 6px; }
-        .hero .slogan { font-size: 17px; opacity: 0.9; margin-bottom: 5px; }
-        .hero .sub-slogan { font-size: 13px; opacity: 0.65; }
+        .hero .slogan { font-size: 17px; opacity: 0.9; } .hero .sub-slogan { font-size: 13px; opacity: 0.65; }
         .icon-row { display: flex; justify-content: center; gap: 25px; margin-top: 20px; flex-wrap: wrap; }
         .icon-item { text-align: center; font-size: 13px; } .icon-item span { font-size: 28px; display: block; margin-bottom: 4px; }
         .container { max-width: 1000px; margin: 0 auto; padding: 25px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
@@ -58,35 +57,34 @@
         <div class="card">
             <h2>🛠️ Что чиним</h2>
             <ul class="services-list">
-                <li>⚙️ Диагностика и ремонт мотор-колёс (Bafang, MXUS)</li>
+                <li>⚙️ Диагностика и ремонт мотор-колёс</li>
                 <li>🔋 Восстановление и замена аккумуляторов</li>
                 <li>🧠 Настройка и замена контроллеров</li>
-                <li>🚲 Тормозные системы, трансмиссия, спицовка</li>
-                <li>💡 Установка фар, поворотников, дисплеев</li>
+                <li>🚲 Тормозные системы, трансмиссия</li>
+                <li>💡 Установка фар, дисплеев</li>
             </ul>
         </div>
         <div class="card">
             <h2>💵 Стоимость</h2>
-            <div class="price-row"><span>Диагностика (выезд + проверка)</span><span class="cost">Бесплатно</span></div>
-            <div class="price-row"><span>Мелкий ремонт (на месте)</span><span class="cost">от 800 ₽</span></div>
+            <div class="price-row"><span>Диагностика</span><span class="cost">Бесплатно</span></div>
+            <div class="price-row"><span>Мелкий ремонт</span><span class="cost">от 800 ₽</span></div>
             <div class="price-row"><span>Замена контроллера</span><span class="cost">от 1500 ₽</span></div>
             <div class="price-row"><span>Ремонт мотор-колеса</span><span class="cost">от 2000 ₽</span></div>
-            <div class="price-row"><span>Сборка батареи</span><span class="cost">от 3500 ₽</span></div>
         </div>
         <div class="card">
             <h2>📱 Связь</h2>
-            <a href="tel:+79161234567" class="btn btn-call">📞 +7 (916) 123-45-67 — Позвонить</a>
-            <a href="https://wa.me/79161234567" target="_blank" class="btn btn-wa">💬 Написать в WhatsApp</a>
+            <a href="tel:+79161234567" class="btn btn-call">📞 Позвонить</a>
+            <a href="https://wa.me/79161234567" target="_blank" class="btn btn-wa">💬 WhatsApp</a>
         </div>
     </div>
 
     <div class="chat-card">
-        <div class="chat-header"><span class="online-dot"></span> Чат с мастером EBikeStreetFix</div>
+        <div class="chat-header"><span class="online-dot"></span> Чат с мастером</div>
         <div class="chat-body" id="chatBody">
-            <div class="msg manager">👋 Здравствуйте! Я мастер EBikeStreetFix. Какая проблема с вашим электровелосипедом?<span class="time">только что</span></div>
+            <div class="msg manager">👋 Здравствуйте! Какая проблема с вашим электровелосипедом?<span class="time">только что</span></div>
         </div>
         <div class="chat-input-area">
-            <input type="text" id="userInput" placeholder="Модель велосипеда и неисправность..." autocomplete="off">
+            <input type="text" id="userInput" placeholder="Опишите неисправность..." autocomplete="off">
             <button id="sendBtn">Отправить</button>
         </div>
     </div>
@@ -105,17 +103,15 @@
     const chatBody = document.getElementById('chatBody');
     const userInput = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
-    if (!chatBody || !userInput || !sendBtn) return;
     userInput.focus();
 
     function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
-
         addMessage('user', text);
         userInput.value = '';
 
-        const cbName = 'scb_' + Date.now();
+        const cbName = 'cb_' + Date.now();
         window[cbName] = function(data) {
             console.log('Sent OK:', data);
             delete window[cbName];
@@ -123,10 +119,8 @@
 
         const s = document.createElement('script');
         s.src = SCRIPT_URL + '?action=send&user_id=' + encodeURIComponent(visitorId) + '&message=' + encodeURIComponent(text) + '&callback=' + cbName;
-        s.onerror = function() { console.error('Send failed'); delete window[cbName]; };
         document.body.appendChild(s);
         s.onload = function() { document.body.removeChild(s); };
-
         scrollDown();
     }
 
@@ -147,26 +141,6 @@
     function scrollDown() {
         chatBody.scrollTop = chatBody.scrollHeight;
     }
-
-    function pollReplies() {
-        const cbName = 'pcb_' + Date.now();
-        window[cbName] = function(data) {
-            if (data && data.messages && data.messages.length) {
-                for (let i = 0; i < data.messages.length; i++) {
-                    addMessage('manager', data.messages[i].text);
-                }
-            }
-            delete window[cbName];
-        };
-
-        const s = document.createElement('script');
-        s.src = SCRIPT_URL + '?action=poll&user_id=' + encodeURIComponent(visitorId) + '&callback=' + cbName;
-        s.onerror = function() { delete window[cbName]; };
-        document.body.appendChild(s);
-        s.onload = function() { document.body.removeChild(s); };
-    }
-
-    setInterval(pollReplies, 3000);
 })();
 </script>
 
